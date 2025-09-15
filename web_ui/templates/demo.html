@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block title %}Demo - Bus Boarding Sequence Generator{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <h1 class="mb-4">
+            <i class="fas fa-play-circle text-success"></i> 
+            Demo - Try It Now!
+        </h1>
+        
+        <div class="alert alert-success">
+            <h5><i class="fas fa-rocket"></i> Quick Demo</h5>
+            <p class="mb-0">Click the buttons below to see the boarding sequence generator in action with sample data.</p>
+        </div>
+
+        <!-- Sample Data Examples -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6><i class="fas fa-database"></i> Sample Data 1 - Basic Example</h6>
+                    </div>
+                    <div class="card-body">
+                        <pre class="bg-light p-3 rounded">Booking_ID   Seats
+101          A1,B1
+120          A20,C2
+105          A15,B15
+130          C5,D5</pre>
+                        <button class="btn btn-primary" onclick="loadSampleData1()">
+                            <i class="fas fa-play"></i> Try This Example
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6><i class="fas fa-database"></i> Sample Data 2 - Complex Example</h6>
+                    </div>
+                    <div class="card-body">
+                        <pre class="bg-light p-3 rounded">Booking_ID   Seats
+201          A1,B1,C1
+202          A20,B20
+203          A10,C10,D10
+204          B5,C5
+205          A18,D18
+206          C15,D15</pre>
+                        <button class="btn btn-primary" onclick="loadSampleData2()">
+                            <i class="fas fa-play"></i> Try This Example
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Algorithm Explanation -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-brain"></i> Algorithm Explanation</h5>
+            </div>
+            <div class="card-body">
+                <h6>How the Boarding Sequence is Determined:</h6>
+                <ol>
+                    <li><strong>Distance Calculation:</strong> For each booking, find the seat furthest from the front entry (highest row number)</li>
+                    <li><strong>Primary Sort:</strong> Bookings with passengers in higher-numbered rows board first</li>
+                    <li><strong>Tie Breaking:</strong> If two bookings have the same furthest row, the booking with the lower ID boards first</li>
+                    <li><strong>Optimization Goal:</strong> Minimize blocking by having passengers with seats further back board first</li>
+                </ol>
+                
+                <div class="alert alert-info mt-3">
+                    <h6><i class="fas fa-lightbulb"></i> Why This Works:</h6>
+                    <p class="mb-0">When passengers with seats at the back of the bus board first, they don't block passengers with seats closer to the front. This reduces the overall boarding time and prevents the "aisle blocking" problem common in transportation.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Input for Demo -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-edit"></i> Create Your Own Example</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="addDemoBookingRow()">
+                    <i class="fas fa-plus"></i> Add Booking
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="demoInputContainer">
+                    <div class="row mb-2 demo-booking-row">
+                        <div class="col-md-3">
+                            <input type="number" class="form-control demo-booking-id" placeholder="Booking ID" value="101" min="1">
+                        </div>
+                        <div class="col-md-7">
+                            <input type="text" class="form-control demo-seats" placeholder="Seats (e.g., A1,B1)" value="A1,B1">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-danger btn-sm" onclick="removeDemoBookingRow(this)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row mb-2 demo-booking-row">
+                        <div class="col-md-3">
+                            <input type="number" class="form-control demo-booking-id" placeholder="Booking ID" value="120" min="1">
+                        </div>
+                        <div class="col-md-7">
+                            <input type="text" class="form-control demo-seats" placeholder="Seats (e.g., A1,B1)" value="A20,C2">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-danger btn-sm" onclick="removeDemoBookingRow(this)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <button class="btn btn-success" onclick="generateDemoSequence()">
+                        <i class="fas fa-cogs"></i> Generate Sequence
+                    </button>
+                    <button class="btn btn-outline-secondary ms-2" onclick="clearDemo()">
+                        <i class="fas fa-eraser"></i> Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Demo Results -->
+        <div id="demoResultsSection" class="d-none">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list-ol"></i> Demo Results</h5>
+                </div>
+                <div class="card-body">
+                    <div id="demoSequenceResults"></div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-chart-line"></i> Step-by-Step Analysis</h6>
+                </div>
+                <div class="card-body">
+                    <div id="demoAnalysisResults"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Loading -->
+        <div id="demoLoadingSpinner" class="text-center d-none">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Processing...</span>
+            </div>
+            <p class="mt-2">Analyzing booking data...</p>
+        </div>
+
+        <!-- Demo Error -->
+        <div id="demoErrorDisplay" class="d-none">
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-triangle"></i> Demo Error</h6>
+                <p id="demoErrorMessage"></p>
+            </div>
+        </div>
+
+        <!-- Tips -->
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-tips"></i> Demo Tips</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success"></i> Try different seat combinations</li>
+                    <li><i class="fas fa-check text-success"></i> Notice how higher row numbers board first</li>
+                    <li><i class="fas fa-check text-success"></i> See tie-breaking with booking IDs</li>
+                    <li><i class="fas fa-check text-success"></i> Test with multiple seats per booking</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadSampleData1() {
+    clearDemo();
+    const sampleData = [
+        {id: 101, seats: "A1,B1"},
+        {id: 120, seats: "A20,C2"},
+        {id: 105, seats: "A15,B15"},
+        {id: 130, seats: "C5,D5"}
+    ];
+    loadDataIntoDemo(sampleData);
+    generateDemoSequence();
+}
+
+function loadSampleData2() {
+    clearDemo();
+    const sampleData = [
+        {id: 201, seats: "A1,B1,C1"},
+        {id: 202, seats: "A20,B20"},
+        {id: 203, seats: "A10,C10,D10"},
+        {id: 204, seats: "B5,C5"},
+        {id: 205, seats: "A18,D18"},
+        {id: 206, seats: "C15,D15"}
+    ];
+    loadDataIntoDemo(sampleData);
+    generateDemoSequence();
+}
+
+function loadDataIntoDemo(data) {
+    const container = document.getElementById('demoInputContainer');
+    container.innerHTML = '';
+    
+    data.forEach(item => {
+        const newRow = document.createElement('div');
+        newRow.className = 'row mb-2 demo-booking-row';
+        newRow.innerHTML = `
+            <div class="col-md-3">
+                <input type="number" class="form-control demo-booking-id" placeholder="Booking ID" value="${item.id}" min="1">
+            </div>
+            <div class="col-md-7">
+                <input type="text" class="form-control demo-seats" placeholder="Seats" value="${item.seats}">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-danger btn-sm" onclick="removeDemoBookingRow(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(newRow);
+    });
+}
+
+function addDemoBookingRow() {
+    const container = document.getElementById('demoInputContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-2 demo-booking-row';
+    newRow.innerHTML = `
+        <div class="col-md-3">
+            <input type="number" class="form-control demo-booking-id" placeholder="Booking ID" min="1">
+        </div>
+        <div class="col-md-7">
+            <input type="text" class="form-control demo-seats" placeholder="Seats (e.g., A1,B1)">
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-outline-danger btn-sm" onclick="removeDemoBookingRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+function removeDemoBookingRow(button) {
+    const container = document.getElementById('demoInputContainer');
+    if (container.children.length > 1) {
+        button.closest('.demo-booking-row').remove();
+    }
+}
+
+function clearDemo() {
+    document.getElementById('demoInputContainer').innerHTML = `
+        <div class="row mb-2 demo-booking-row">
+            <div class="col-md-3">
+                <input type="number" class="form-control demo-booking-id" placeholder="Booking ID" min="1">
+            </div>
+            <div class="col-md-7">
+                <input type="text" class="form-control demo-seats" placeholder="Seats (e.g., A1,B1)">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-danger btn-sm" onclick="removeDemoBookingRow(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    document.getElementById('demoResultsSection').classList.add('d-none');
+    document.getElementById('demoErrorDisplay').classList.add('d-none');
+}
+
+function generateDemoSequence() {
+    // Hide previous results and errors
+    document.getElementById('demoResultsSection').classList.add('d-none');
+    document.getElementById('demoErrorDisplay').classList.add('d-none');
+    document.getElementById('demoLoadingSpinner').classList.remove('d-none');
+
+    // Collect manual input data
+    const bookingRows = document.querySelectorAll('.demo-booking-row');
+    const manualData = [];
+    
+    for (let row of bookingRows) {
+        const bookingId = row.querySelector('.demo-booking-id').value;
+        const seats = row.querySelector('.demo-seats').value;
+        
+        if (bookingId && seats) {
+            manualData.push({
+                booking_id: parseInt(bookingId),
+                seats: seats.trim()
+            });
+        }
+    }
+    
+    if (manualData.length === 0) {
+        showDemoError('Please enter at least one booking with valid data.');
+        return;
+    }
+    
+    fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({manual_data: manualData})
+    })
+    .then(response => response.json())
+    .then(data => handleDemoResponse(data))
+    .catch(error => showDemoError('Network error: ' + error.message));
+}
+
+function handleDemoResponse(data) {
+    document.getElementById('demoLoadingSpinner').classList.add('d-none');
+    
+    if (data.error) {
+        showDemoError(data.error);
+        return;
+    }
+    
+    displayDemoResults(data);
+}
+
+function displayDemoResults(data) {
+    // Display sequence table
+    let sequenceHtml = `
+        <table class="table table-striped table-sm">
+            <thead class="table-success">
+                <tr>
+                    <th>Seq</th>
+                    <th>Booking ID</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    for (let [seq, bookingId] of data.sequence) {
+        sequenceHtml += `<tr><td>${seq}</td><td>${bookingId}</td></tr>`;
+    }
+    
+    sequenceHtml += `</tbody></table>`;
+    document.getElementById('demoSequenceResults').innerHTML = sequenceHtml;
+    
+    // Display detailed analysis
+    let analysisHtml = `<div class="small">`;
+    
+    data.details.forEach((detail, index) => {
+        const maxDistance = detail.furthest_seat_distance;
+        analysisHtml += `
+            <div class="border-start border-3 border-success ps-2 mb-2">
+                <strong>Step ${detail.sequence}:</strong> Booking ${detail.booking_id}<br>
+                <span class="text-muted">Seats: ${detail.seats.join(', ')}</span><br>
+                <span class="text-success">Furthest from front: Row ${maxDistance}</span>
+            </div>
+        `;
+    });
+    
+    analysisHtml += `</div>`;
+    document.getElementById('demoAnalysisResults').innerHTML = analysisHtml;
+    document.getElementById('demoResultsSection').classList.remove('d-none');
+}
+
+function showDemoError(message) {
+    document.getElementById('demoLoadingSpinner').classList.add('d-none');
+    document.getElementById('demoErrorMessage').textContent = message;
+    document.getElementById('demoErrorDisplay').classList.remove('d-none');
+}
+</script>
+{% endblock %}
